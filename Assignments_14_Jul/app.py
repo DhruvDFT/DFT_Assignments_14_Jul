@@ -476,7 +476,158 @@ def logout():
     return redirect('/login')
 
 # END OF PART 1 - NOW COPY PART 2 AND APPEND IT TO THIS FILE
-<p>• <strong>{len([t for t in all_tests if t['status'] == 'overdue'])}</strong> overdue assessments</p>
+# app.py - PART 2 - COPY THIS SECOND AND APPEND TO PART 1
+
+@app.route('/admin')
+def admin():
+    if not session.get('is_admin'):
+        return redirect('/login')
+    
+    engineers = [u for u in users.values() if not u.get('is_admin')]
+    all_tests = list(assignments.values())
+    pending = [a for a in all_tests if a['status'] == 'submitted']
+    
+    eng_options = ''
+    for eng in engineers:
+        display_name = eng.get('display_name', eng['username'])
+        eng_options += f'<option value="{eng["id"]}">{display_name} (2+ Experience)</option>'
+    
+    return f'''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <style>
+        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; margin: 0; }}
+        .header {{ background: #2563eb; color: white; padding: 20px; }}
+        .header-content {{
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }}
+        .nav-links a {{ color: white; text-decoration: none; margin-left: 20px; padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 6px; }}
+        .nav-links a:hover {{ background: rgba(255,255,255,0.3); }}
+        .container {{ max-width: 1200px; margin: 20px auto; padding: 0 20px; }}
+        .stats {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }}
+        .stat {{ background: white; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+        .stat-num {{ font-size: 32px; font-weight: bold; color: #2563eb; margin-bottom: 5px; }}
+        .stat-label {{ color: #64748b; font-weight: 600; }}
+        .quick-actions {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }}
+        .action-card {{
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            border-left: 4px solid #3b82f6;
+        }}
+        .action-card.review {{ border-left-color: #f59e0b; }}
+        .action-card.create {{ border-left-color: #10b981; }}
+        .action-btn {{
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 8px;
+            display: inline-block;
+            font-weight: 600;
+            margin-top: 15px;
+            transition: transform 0.2s ease;
+        }}
+        .action-btn:hover {{ transform: translateY(-2px); }}
+        .action-btn.review {{ background: linear-gradient(135deg, #f59e0b, #d97706); }}
+        .action-btn.create {{ background: linear-gradient(135deg, #10b981, #059669); }}
+        select, button {{ padding: 12px; border: 1px solid #ddd; border-radius: 6px; margin: 5px; }}
+        .btn-primary {{ background: #2563eb; color: white; border: none; cursor: pointer; }}
+        .pending-count {{
+            background: #f59e0b;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }}
+        .card {{ background: white; border-radius: 12px; padding: 30px; margin: 20px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>🎯 Admin Dashboard</h1>
+            <div class="nav-links">
+                <a href="/admin/review">📋 Review Center</a>
+                <a href="/logout">Logout</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-num">{len(engineers)}</div>
+                <div class="stat-label">Engineers</div>
+            </div>
+            <div class="stat">
+                <div class="stat-num">{len(all_tests)}</div>
+                <div class="stat-label">Total Tests</div>
+            </div>
+            <div class="stat">
+                <div class="stat-num">{len(pending)}</div>
+                <div class="stat-label">Pending Review</div>
+            </div>
+            <div class="stat">
+                <div class="stat-num">90</div>
+                <div class="stat-label">Total Questions</div>
+            </div>
+        </div>
+        
+        <div class="quick-actions">
+            <div class="action-card review">
+                <h3>📋 Review Submissions</h3>
+                <p>Review and grade submitted assessments from engineers</p>
+                <a href="/admin/review" class="action-btn review">
+                    Review Tests
+                    {f'<span class="pending-count">{len(pending)}</span>' if len(pending) > 0 else ''}
+                </a>
+            </div>
+            
+            <div class="action-card create">
+                <h3>➕ Create Assessment</h3>
+                <p>Assign new technical assessments to engineers (⏰ 2-day deadline)</p>
+                <div style="margin-top: 15px;">
+                    <form method="POST" action="/admin/create" style="display: inline;">
+                        <select name="engineer_id" required style="display: block; width: 100%; margin-bottom: 10px;">
+                            <option value="">Select Engineer...</option>
+                            {eng_options}
+                        </select>
+                        <select name="topic" required style="display: block; width: 100%; margin-bottom: 15px;">
+                            <option value="">Select Topic...</option>
+                            <option value="sta">STA (Static Timing Analysis)</option>
+                            <option value="cts">CTS (Clock Tree Synthesis)</option>
+                            <option value="signoff">Signoff Checks</option>
+                            <option value="dft">DFT (Design for Test)</option>
+                            <option value="synthesis">Synthesis</option>
+                        </select>
+                        <button type="submit" class="action-btn create" style="margin: 0; width: 100%;">Create Assessment</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>📊 System Overview</h2>
+            <div style="color: #64748b;">
+                <p>• <strong>{len([t for t in all_tests if t['status'] == 'pending'])}</strong> assessments in progress</p>
+                <p>• <strong>{len([t for t in all_tests if t['status'] == 'submitted'])}</strong> submissions awaiting review</p>
+                <p>• <strong>{len([t for t in all_tests if t['status'] == 'completed'])}</strong> assessments completed</p>
+                <p>• <strong>{len([t for t in all_tests if t['status'] == 'overdue'])}</strong> overdue assessments</p>
                 <p>• <strong>⏰ 2-day hard deadline</strong> enforced for all new assessments</p>
                 <p>• <strong>90 Questions total</strong> across STA, CTS, Signoff, DFT, and Synthesis</p>
                 <p>• <strong>22 Engineers</strong> including DFT team and Synthesis specialist</p>
@@ -1669,155 +1820,4 @@ if __name__ == '__main__':
         print(f"❌ STARTUP ERROR: {str(e)}")
         import traceback
         traceback.print_exc()
-        exit(1)# app.py - PART 2 - COPY THIS SECOND AND APPEND TO PART 1
-
-@app.route('/admin')
-def admin():
-    if not session.get('is_admin'):
-        return redirect('/login')
-    
-    engineers = [u for u in users.values() if not u.get('is_admin')]
-    all_tests = list(assignments.values())
-    pending = [a for a in all_tests if a['status'] == 'submitted']
-    
-    eng_options = ''
-    for eng in engineers:
-        display_name = eng.get('display_name', eng['username'])
-        eng_options += f'<option value="{eng["id"]}">{display_name} (2+ Experience)</option>'
-    
-    return f'''
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Admin Dashboard</title>
-    <style>
-        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; margin: 0; }}
-        .header {{ background: #2563eb; color: white; padding: 20px; }}
-        .header-content {{
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }}
-        .nav-links a {{ color: white; text-decoration: none; margin-left: 20px; padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 6px; }}
-        .nav-links a:hover {{ background: rgba(255,255,255,0.3); }}
-        .container {{ max-width: 1200px; margin: 20px auto; padding: 0 20px; }}
-        .stats {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }}
-        .stat {{ background: white; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
-        .stat-num {{ font-size: 32px; font-weight: bold; color: #2563eb; margin-bottom: 5px; }}
-        .stat-label {{ color: #64748b; font-weight: 600; }}
-        .quick-actions {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }}
-        .action-card {{
-            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-            border-radius: 12px;
-            padding: 25px;
-            text-align: center;
-            border-left: 4px solid #3b82f6;
-        }}
-        .action-card.review {{ border-left-color: #f59e0b; }}
-        .action-card.create {{ border-left-color: #10b981; }}
-        .action-btn {{
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            color: white;
-            padding: 12px 24px;
-            text-decoration: none;
-            border-radius: 8px;
-            display: inline-block;
-            font-weight: 600;
-            margin-top: 15px;
-            transition: transform 0.2s ease;
-        }}
-        .action-btn:hover {{ transform: translateY(-2px); }}
-        .action-btn.review {{ background: linear-gradient(135deg, #f59e0b, #d97706); }}
-        .action-btn.create {{ background: linear-gradient(135deg, #10b981, #059669); }}
-        select, button {{ padding: 12px; border: 1px solid #ddd; border-radius: 6px; margin: 5px; }}
-        .btn-primary {{ background: #2563eb; color: white; border: none; cursor: pointer; }}
-        .pending-count {{
-            background: #f59e0b;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 10px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-left: 8px;
-        }}
-        .card {{ background: white; border-radius: 12px; padding: 30px; margin: 20px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
-    </style>
-</head>
-<body>
-    <div class="header">
-        <div class="header-content">
-            <h1>🎯 Admin Dashboard</h1>
-            <div class="nav-links">
-                <a href="/admin/review">📋 Review Center</a>
-                <a href="/logout">Logout</a>
-            </div>
-        </div>
-    </div>
-    
-    <div class="container">
-        <div class="stats">
-            <div class="stat">
-                <div class="stat-num">{len(engineers)}</div>
-                <div class="stat-label">Engineers</div>
-            </div>
-            <div class="stat">
-                <div class="stat-num">{len(all_tests)}</div>
-                <div class="stat-label">Total Tests</div>
-            </div>
-            <div class="stat">
-                <div class="stat-num">{len(pending)}</div>
-                <div class="stat-label">Pending Review</div>
-            </div>
-            <div class="stat">
-                <div class="stat-num">90</div>
-                <div class="stat-label">Total Questions</div>
-            </div>
-        </div>
-        
-        <div class="quick-actions">
-            <div class="action-card review">
-                <h3>📋 Review Submissions</h3>
-                <p>Review and grade submitted assessments from engineers</p>
-                <a href="/admin/review" class="action-btn review">
-                    Review Tests
-                    {f'<span class="pending-count">{len(pending)}</span>' if len(pending) > 0 else ''}
-                </a>
-            </div>
-            
-            <div class="action-card create">
-                <h3>➕ Create Assessment</h3>
-                <p>Assign new technical assessments to engineers (⏰ 2-day deadline)</p>
-                <div style="margin-top: 15px;">
-                    <form method="POST" action="/admin/create" style="display: inline;">
-                        <select name="engineer_id" required style="display: block; width: 100%; margin-bottom: 10px;">
-                            <option value="">Select Engineer...</option>
-                            {eng_options}
-                        </select>
-                        <select name="topic" required style="display: block; width: 100%; margin-bottom: 15px;">
-                            <option value="">Select Topic...</option>
-                            <option value="sta">STA (Static Timing Analysis)</option>
-                            <option value="cts">CTS (Clock Tree Synthesis)</option>
-                            <option value="signoff">Signoff Checks</option>
-                            <option value="dft">DFT (Design for Test)</option>
-                            <option value="synthesis">Synthesis</option>
-                        </select>
-                        <button type="submit" class="action-btn create" style="margin: 0; width: 100%;">Create Assessment</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-        
-        <div class="card">
-            <h2>📊 System Overview</h2>
-            <div style="color: #64748b;">
-                <p>• <strong>{len([t for t in all_tests if t['status'] == 'pending'])}</strong> assessments in progress</p>
-                <p>• <strong>{len([t for t in all_tests if t['status'] == 'submitted'])}</strong> submissions awaiting review</p>
-                <p>• <strong>{len([t for t in all_tests if t['status'] == 'completed'])}</strong> assessments completed</p>
-                <p>• <strong>{len([t for t in all_tests if t['status'] == 'overdue'])}</strong> overdue assessments
+        exit(1)
