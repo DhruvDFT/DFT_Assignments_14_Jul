@@ -1,4 +1,4 @@
-# app.py - File 1 (Complete First Half)
+# app.py - PART 1 - COPY THIS FIRST
 import os
 import hashlib
 from datetime import datetime, timedelta
@@ -474,7 +474,10 @@ def login():
 def logout():
     session.clear()
     return redirect('/login')
-<p>• <strong>⏰ 2-day hard deadline</strong> enforced for all new assessments</p>
+
+# END OF PART 1 - NOW COPY PART 2 AND APPEND IT TO THIS FILE
+<p>• <strong>{len([t for t in all_tests if t['status'] == 'overdue'])}</strong> overdue assessments</p>
+                <p>• <strong>⏰ 2-day hard deadline</strong> enforced for all new assessments</p>
                 <p>• <strong>90 Questions total</strong> across STA, CTS, Signoff, DFT, and Synthesis</p>
                 <p>• <strong>22 Engineers</strong> including DFT team and Synthesis specialist</p>
                 <p>• <strong>Auto-scoring system</strong> provides initial evaluation</p>
@@ -678,430 +681,6 @@ def admin_review_test(test_id):
         return redirect('/login')
     
     test = assignments.get(test_id)
-    if not test or test['engineer_id'] != session['user_id']:
-        return redirect('/student')
-    
-    # Check if test is overdue and block access
-    if is_overdue(test['due']) and test['status'] == 'pending':
-        test['status'] = 'overdue'
-        return redirect('/student')
-    
-    if request.method == 'POST' and test['status'] == 'pending':
-        # Double-check deadline before accepting submission
-        if is_overdue(test['due']):
-            test['status'] = 'overdue'
-            return redirect('/student')
-            
-        answers = {}
-        for i in range(18):  # 18 questions
-            answer = request.form.get(f'answer_{i}', '').strip()
-            if answer:
-                answers[str(i)] = answer
-        
-        if len(answers) >= 15:  # At least 15 answers required
-            test['answers'] = answers
-            test['status'] = 'submitted'
-            test['submitted_date'] = datetime.now().isoformat()
-            
-            # Auto-score the answers
-            test['auto_scores'] = {}
-            for i, answer in answers.items():
-                if answer:
-                    suggested_score, reasoning = analyze_answer_quality(
-                        test['questions'][int(i)], answer, test['topic']
-                    )
-                    test['auto_scores'][i] = {
-                        'score': suggested_score,
-                        'reasoning': reasoning
-                    }
-        
-        return redirect('/student')
-    
-    # If already submitted or overdue, redirect
-    if test['status'] != 'pending':
-        return redirect('/student')
-    
-    # Calculate time remaining
-    time_remaining = get_time_remaining(test['due'])
-    is_urgent = 'remaining' in time_remaining and ('h' in time_remaining or 'm' in time_remaining)
-    
-    questions_html = ''
-    for i, q in enumerate(test['questions']):
-        questions_html += f'''
-        <div class="question-card">
-            <div class="question-header">
-                <span class="question-number">Question {i+1} of 18</span>
-                <span class="topic-badge">{test["topic"].upper()}</span>
-            </div>
-            <div class="question-text">{q}</div>
-            <div class="answer-section">
-                <label for="answer_{i}">Your Answer:</label>
-                <textarea id="answer_{i}" name="answer_{i}" placeholder="Provide detailed technical answer..." required></textarea>
-                <div class="char-count" id="count_{i}">0 characters</div>
-            </div>
-        </div>'''
-    
-    return f'''
-<!DOCTYPE html>
-<html>
-<head>
-    <title>{test["topic"].upper()} Assessment - DEADLINE: 2 DAYS</title>
-    <style>
-        body {{ 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-            margin: 0; 
-            min-height: 100vh;
-        }}
-        .header {{ 
-            background: rgba(255,255,255,0.15); 
-            backdrop-filter: blur(10px);
-            color: white; 
-            padding: 20px 0;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }}
-        .header-content {{
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 0 20px;
-            text-align: center;
-        }}
-        .deadline-alert {{
-            background: {'linear-gradient(135deg, #dc2626, #b91c1c)' if is_urgent else 'linear-gradient(135deg, #f59e0b, #d97706)'};
-            color: white;
-            padding: 15px;
-            text-align: center;
-            font-weight: bold;
-            margin-bottom: 20px;
-            border-radius: 12px;
-            animation: {'urgentPulse 2s infinite' if is_urgent else 'none'};
-        }}
-        @keyframes urgentPulse {{
-            0%, 100% {{ transform: scale(1); }}
-            50% {{ transform: scale(1.02); }}
-        }}
-        .container {{ 
-            max-width: 1000px; 
-            margin: 20px auto; 
-            padding: 0 20px; 
-        }}
-        .test-info {{
-            background: rgba(255,255,255,0.95);
-            border-radius: 16px;
-            padding: 25px;
-            margin-bottom: 25px;
-            text-align: center;
-            border: {'3px solid #dc2626' if is_urgent else '2px solid #f59e0b'};
-        }}
-        .question-card {{
-            background: rgba(255,255,255,0.95);
-            border-radius: 16px;
-            padding: 30px;
-            margin: 25px 0;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-        }}
-        .question-header {{
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }}
-        .question-number {{
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 14px;
-        }}
-        .topic-badge {{
-            background: #f1f5f9;
-            color: #64748b;
-            padding: 6px 12px;
-            border-radius: 15px;
-            font-size: 12px;
-            font-weight: 600;
-        }}
-        .question-text {{
-            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            border-left: 4px solid #667eea;
-            line-height: 1.6;
-            color: #1e293b;
-        }}
-        .answer-section label {{
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #374151;
-        }}
-        textarea {{
-            width: 100%;
-            min-height: 120px;
-            padding: 16px;
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
-            font-size: 14px;
-            font-family: inherit;
-            resize: vertical;
-            transition: border-color 0.3s ease;
-        }}
-        textarea:focus {{
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }}
-        .char-count {{
-            text-align: right;
-            font-size: 12px;
-            color: #64748b;
-            margin-top: 5px;
-        }}
-        .submit-section {{
-            background: rgba(255,255,255,0.95);
-            border-radius: 16px;
-            padding: 30px;
-            text-align: center;
-            margin-top: 30px;
-            border: {'3px solid #dc2626' if is_urgent else '2px solid #f59e0b'};
-        }}
-        .warning {{
-            background: #fef3c7;
-            border: 1px solid #f59e0b;
-            padding: 16px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            color: #92400e;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }}
-        .urgent-warning {{
-            background: #fee2e2;
-            border: 2px solid #dc2626;
-            color: #991b1b;
-            animation: urgentPulse 2s infinite;
-        }}
-        .btn {{
-            padding: 14px 28px;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            margin: 8px;
-            text-decoration: none;
-            display: inline-block;
-            transition: all 0.3s ease;
-        }}
-        .btn-primary {{
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-        }}
-        .btn-primary:hover {{
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
-        }}
-        .btn-secondary {{
-            background: rgba(107,114,128,0.1);
-            color: #374151;
-        }}
-        .progress-bar {{
-            background: #e5e7eb;
-            height: 6px;
-            border-radius: 3px;
-            margin: 20px 0;
-            overflow: hidden;
-        }}
-        .progress-fill {{
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            height: 100%;
-            width: 0%;
-            transition: width 0.3s ease;
-        }}
-        .time-remaining {{
-            font-size: 18px;
-            font-weight: bold;
-            color: {'#dc2626' if is_urgent else '#f59e0b'};
-            margin: 10px 0;
-        }}
-    </style>
-</head>
-<body>
-    <div class="header">
-        <div class="header-content">
-            <h1>📝 {test["topic"].upper()} Assessment</h1>
-            <p>⏰ HARD DEADLINE: 2 DAYS FROM ASSIGNMENT</p>
-        </div>
-    </div>
-    
-    <div class="container">
-        <div class="deadline-alert">
-            🚨 MANDATORY DEADLINE: Complete within 2 days or test will be auto-locked! 🚨
-        </div>
-        
-        <div class="test-info">
-            <h2>📋 Assessment Details</h2>
-            <div class="time-remaining">⏰ {time_remaining}</div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 20px;">
-                <div><strong>Questions:</strong> 18 Technical</div>
-                <div><strong>Max Points:</strong> 180 (10 each)</div>
-                <div><strong>Hard Deadline:</strong> {test["due"][:16].replace('T', ' ')}</div>
-                <div><strong>Topic:</strong> {test["topic"].upper()}</div>
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressBar"></div>
-            </div>
-            <div id="progressText">Progress: 0/18 questions answered</div>
-        </div>
-        
-        <form method="POST" id="assessmentForm">
-            {questions_html}
-            
-            <div class="submit-section">
-                <div class="{'urgent-warning' if is_urgent else 'warning'}">
-                    {'🚨 URGENT: Less than 24 hours remaining! Submit immediately or lose access!' if is_urgent else '⚠️ DEADLINE ENFORCEMENT: Test will be automatically locked after 2 days. Submit before deadline!'}
-                </div>
-                <button type="submit" class="btn btn-primary" id="submitBtn" disabled>Submit Assessment</button>
-                <a href="/student" class="btn btn-secondary">Save & Exit</a>
-                <div style="margin-top: 15px; font-size: 14px; color: #64748b;">
-                    Auto-save enabled • Time remaining: <strong>{time_remaining}</strong>
-                </div>
-            </div>
-        </form>
-    </div>
-    
-    <script>
-        // Deadline checking
-        function checkDeadline() {{
-            const dueDate = new Date('{test["due"]}');
-            const now = new Date();
-            
-            if (now > dueDate) {{
-                alert('⏰ DEADLINE EXCEEDED! This test is now locked. Redirecting to dashboard.');
-                window.location.href = '/student';
-                return;
-            }}
-            
-            // Show warning if less than 2 hours remaining
-            const timeLeft = dueDate - now;
-            const hoursLeft = timeLeft / (1000 * 60 * 60);
-            
-            if (hoursLeft <= 2 && hoursLeft > 0) {{
-                document.body.style.background = 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)';
-            }}
-        }}
-        
-        // Check deadline every minute
-        setInterval(checkDeadline, 60000);
-        checkDeadline(); // Initial check
-        
-        // Character counting and progress tracking
-        const textareas = document.querySelectorAll('textarea');
-        const progressBar = document.getElementById('progressBar');
-        const progressText = document.getElementById('progressText');
-        const submitBtn = document.getElementById('submitBtn');
-        
-        textareas.forEach((textarea, index) => {{
-            const counter = document.getElementById(`count_${{index}}`);
-            
-            textarea.addEventListener('input', function() {{
-                const length = this.value.length;
-                counter.textContent = `${{length}} characters`;
-                
-                // Update progress
-                updateProgress();
-            }});
-        }});
-        
-        function updateProgress() {{
-            const answered = Array.from(textareas).filter(ta => ta.value.trim().length >= 20).length;
-            const percentage = (answered / 18) * 100;
-            
-            progressBar.style.width = percentage + '%';
-            progressText.textContent = `Progress: ${{answered}}/18 questions answered`;
-            
-            // Enable submit button if at least 15 questions answered
-            submitBtn.disabled = answered < 15;
-            if (answered >= 15) {{
-                submitBtn.style.opacity = '1';
-                submitBtn.style.cursor = 'pointer';
-            }} else {{
-                submitBtn.style.opacity = '0.6';
-                submitBtn.style.cursor = 'not-allowed';
-            }}
-        }}
-        
-        // Form submission validation
-        document.getElementById('assessmentForm').addEventListener('submit', function(e) {{
-            // Final deadline check
-            const dueDate = new Date('{test["due"]}');
-            const now = new Date();
-            
-            if (now > dueDate) {{
-                e.preventDefault();
-                alert('⏰ DEADLINE EXCEEDED! Cannot submit after deadline.');
-                window.location.href = '/student';
-                return false;
-            }}
-            
-            const answered = Array.from(textareas).filter(ta => ta.value.trim().length >= 20).length;
-            if (answered < 15) {{
-                e.preventDefault();
-                alert('Please answer at least 15 questions (minimum 20 characters each) before submitting.');
-                return false;
-            }}
-            
-            if (!confirm('⏰ FINAL SUBMISSION: Are you sure you want to submit? You cannot edit after submission and the deadline is enforced!')) {{
-                e.preventDefault();
-                return false;
-            }}
-        }});
-        
-        // Auto-save to localStorage
-        textareas.forEach((textarea, index) => {{
-            const key = `test_{test["id"]}_answer_${{index}}`;
-            textarea.value = localStorage.getItem(key) || '';
-            
-            textarea.addEventListener('input', function() {{
-                localStorage.setItem(key, this.value);
-            }});
-        }});
-        
-        // Initial progress update
-        updateProgress();
-    </script>
-</body>
-</html>'''
-
-if __name__ == '__main__':
-    try:
-        print("🚂 Starting Physical Design Assessment System...")
-        init_data()
-        print("✅ Data initialized successfully")
-        print("✅ 22 Engineers loaded (18 + 3 DFT + 1 Synthesis)")
-        print("✅ 90 Questions loaded (STA, CTS, Signoff, DFT, Synthesis)")
-        print("✅ Auto-scoring system ready")
-        print("✅ 2-day deadline enforcement active")
-        
-        port = int(os.environ.get('PORT', 5000))
-        print(f"✅ Starting server on port {port}")
-        print("🌐 Access the system at: http://localhost:5000")
-        print("👤 Admin: admin / Vibhuaya@3006")
-        print("👥 Engineers: eng001-eng022 / password123")
-        print("🔧 DFT Team: Anbu, Shama, Kiran (eng019-eng021)")
-        print("🔄 Synthesis: Pavan (eng022)")
-        
-        app.run(host='0.0.0.0', port=port, debug=False)
-        
-    except Exception as e:
-        print(f"❌ STARTUP ERROR: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        exit(1)(test_id)
     if not test:
         return redirect('/admin/review')
     
@@ -1666,8 +1245,431 @@ def student_test(test_id):
     if not session.get('user_id') or session.get('is_admin'):
         return redirect('/login')
     
-    test = assignments.get# app.py - File 2 (Complete Second Half)
-# CONTINUE FROM FILE 1 - ADD THIS AFTER FILE 1
+    test = assignments.get(test_id)
+    if not test or test['engineer_id'] != session['user_id']:
+        return redirect('/student')
+    
+    # Check if test is overdue and block access
+    if is_overdue(test['due']) and test['status'] == 'pending':
+        test['status'] = 'overdue'
+        return redirect('/student')
+    
+    if request.method == 'POST' and test['status'] == 'pending':
+        # Double-check deadline before accepting submission
+        if is_overdue(test['due']):
+            test['status'] = 'overdue'
+            return redirect('/student')
+            
+        answers = {}
+        for i in range(18):  # 18 questions
+            answer = request.form.get(f'answer_{i}', '').strip()
+            if answer:
+                answers[str(i)] = answer
+        
+        if len(answers) >= 15:  # At least 15 answers required
+            test['answers'] = answers
+            test['status'] = 'submitted'
+            test['submitted_date'] = datetime.now().isoformat()
+            
+            # Auto-score the answers
+            test['auto_scores'] = {}
+            for i, answer in answers.items():
+                if answer:
+                    suggested_score, reasoning = analyze_answer_quality(
+                        test['questions'][int(i)], answer, test['topic']
+                    )
+                    test['auto_scores'][i] = {
+                        'score': suggested_score,
+                        'reasoning': reasoning
+                    }
+        
+        return redirect('/student')
+    
+    # If already submitted or overdue, redirect
+    if test['status'] != 'pending':
+        return redirect('/student')
+    
+    # Calculate time remaining
+    time_remaining = get_time_remaining(test['due'])
+    is_urgent = 'remaining' in time_remaining and ('h' in time_remaining or 'm' in time_remaining)
+    
+    questions_html = ''
+    for i, q in enumerate(test['questions']):
+        questions_html += f'''
+        <div class="question-card">
+            <div class="question-header">
+                <span class="question-number">Question {i+1} of 18</span>
+                <span class="topic-badge">{test["topic"].upper()}</span>
+            </div>
+            <div class="question-text">{q}</div>
+            <div class="answer-section">
+                <label for="answer_{i}">Your Answer:</label>
+                <textarea id="answer_{i}" name="answer_{i}" placeholder="Provide detailed technical answer..." required></textarea>
+                <div class="char-count" id="count_{i}">0 characters</div>
+            </div>
+        </div>'''
+    
+    return f'''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{test["topic"].upper()} Assessment - DEADLINE: 2 DAYS</title>
+    <style>
+        body {{ 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            margin: 0; 
+            min-height: 100vh;
+        }}
+        .header {{ 
+            background: rgba(255,255,255,0.15); 
+            backdrop-filter: blur(10px);
+            color: white; 
+            padding: 20px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }}
+        .header-content {{
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 20px;
+            text-align: center;
+        }}
+        .deadline-alert {{
+            background: {'linear-gradient(135deg, #dc2626, #b91c1c)' if is_urgent else 'linear-gradient(135deg, #f59e0b, #d97706)'};
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            animation: {'urgentPulse 2s infinite' if is_urgent else 'none'};
+        }}
+        @keyframes urgentPulse {{
+            0%, 100% {{ transform: scale(1); }}
+            50% {{ transform: scale(1.02); }}
+        }}
+        .container {{ 
+            max-width: 1000px; 
+            margin: 20px auto; 
+            padding: 0 20px; 
+        }}
+        .test-info {{
+            background: rgba(255,255,255,0.95);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+            text-align: center;
+            border: {'3px solid #dc2626' if is_urgent else '2px solid #f59e0b'};
+        }}
+        .question-card {{
+            background: rgba(255,255,255,0.95);
+            border-radius: 16px;
+            padding: 30px;
+            margin: 25px 0;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }}
+        .question-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }}
+        .question-number {{
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+        }}
+        .topic-badge {{
+            background: #f1f5f9;
+            color: #64748b;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 600;
+        }}
+        .question-text {{
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+            line-height: 1.6;
+            color: #1e293b;
+        }}
+        .answer-section label {{
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+        }}
+        textarea {{
+            width: 100%;
+            min-height: 120px;
+            padding: 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }}
+        textarea:focus {{
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }}
+        .char-count {{
+            text-align: right;
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 5px;
+        }}
+        .submit-section {{
+            background: rgba(255,255,255,0.95);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            margin-top: 30px;
+            border: {'3px solid #dc2626' if is_urgent else '2px solid #f59e0b'};
+        }}
+        .warning {{
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            color: #92400e;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }}
+        .urgent-warning {{
+            background: #fee2e2;
+            border: 2px solid #dc2626;
+            color: #991b1b;
+            animation: urgentPulse 2s infinite;
+        }}
+        .btn {{
+            padding: 14px 28px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 8px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }}
+        .btn-primary {{
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }}
+        .btn-primary:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }}
+        .btn-secondary {{
+            background: rgba(107,114,128,0.1);
+            color: #374151;
+        }}
+        .progress-bar {{
+            background: #e5e7eb;
+            height: 6px;
+            border-radius: 3px;
+            margin: 20px 0;
+            overflow: hidden;
+        }}
+        .progress-fill {{
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }}
+        .time-remaining {{
+            font-size: 18px;
+            font-weight: bold;
+            color: {'#dc2626' if is_urgent else '#f59e0b'};
+            margin: 10px 0;
+        }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>📝 {test["topic"].upper()} Assessment</h1>
+            <p>⏰ HARD DEADLINE: 2 DAYS FROM ASSIGNMENT</p>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="deadline-alert">
+            🚨 MANDATORY DEADLINE: Complete within 2 days or test will be auto-locked! 🚨
+        </div>
+        
+        <div class="test-info">
+            <h2>📋 Assessment Details</h2>
+            <div class="time-remaining">⏰ {time_remaining}</div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 20px;">
+                <div><strong>Questions:</strong> 18 Technical</div>
+                <div><strong>Max Points:</strong> 180 (10 each)</div>
+                <div><strong>Hard Deadline:</strong> {test["due"][:16].replace('T', ' ')}</div>
+                <div><strong>Topic:</strong> {test["topic"].upper()}</div>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar"></div>
+            </div>
+            <div id="progressText">Progress: 0/18 questions answered</div>
+        </div>
+        
+        <form method="POST" id="assessmentForm">
+            {questions_html}
+            
+            <div class="submit-section">
+                <div class="{'urgent-warning' if is_urgent else 'warning'}">
+                    {'🚨 URGENT: Less than 24 hours remaining! Submit immediately or lose access!' if is_urgent else '⚠️ DEADLINE ENFORCEMENT: Test will be automatically locked after 2 days. Submit before deadline!'}
+                </div>
+                <button type="submit" class="btn btn-primary" id="submitBtn" disabled>Submit Assessment</button>
+                <a href="/student" class="btn btn-secondary">Save & Exit</a>
+                <div style="margin-top: 15px; font-size: 14px; color: #64748b;">
+                    Auto-save enabled • Time remaining: <strong>{time_remaining}</strong>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <script>
+        // Deadline checking
+        function checkDeadline() {{
+            const dueDate = new Date('{test["due"]}');
+            const now = new Date();
+            
+            if (now > dueDate) {{
+                alert('⏰ DEADLINE EXCEEDED! This test is now locked. Redirecting to dashboard.');
+                window.location.href = '/student';
+                return;
+            }}
+            
+            // Show warning if less than 2 hours remaining
+            const timeLeft = dueDate - now;
+            const hoursLeft = timeLeft / (1000 * 60 * 60);
+            
+            if (hoursLeft <= 2 && hoursLeft > 0) {{
+                document.body.style.background = 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)';
+            }}
+        }}
+        
+        // Check deadline every minute
+        setInterval(checkDeadline, 60000);
+        checkDeadline(); // Initial check
+        
+        // Character counting and progress tracking
+        const textareas = document.querySelectorAll('textarea');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        textareas.forEach((textarea, index) => {{
+            const counter = document.getElementById(`count_${{index}}`);
+            
+            textarea.addEventListener('input', function() {{
+                const length = this.value.length;
+                counter.textContent = `${{length}} characters`;
+                
+                // Update progress
+                updateProgress();
+            }});
+        }});
+        
+        function updateProgress() {{
+            const answered = Array.from(textareas).filter(ta => ta.value.trim().length >= 20).length;
+            const percentage = (answered / 18) * 100;
+            
+            progressBar.style.width = percentage + '%';
+            progressText.textContent = `Progress: ${{answered}}/18 questions answered`;
+            
+            // Enable submit button if at least 15 questions answered
+            submitBtn.disabled = answered < 15;
+            if (answered >= 15) {{
+                submitBtn.style.opacity = '1';
+                submitBtn.style.cursor = 'pointer';
+            }} else {{
+                submitBtn.style.opacity = '0.6';
+                submitBtn.style.cursor = 'not-allowed';
+            }}
+        }}
+        
+        // Form submission validation
+        document.getElementById('assessmentForm').addEventListener('submit', function(e) {{
+            // Final deadline check
+            const dueDate = new Date('{test["due"]}');
+            const now = new Date();
+            
+            if (now > dueDate) {{
+                e.preventDefault();
+                alert('⏰ DEADLINE EXCEEDED! Cannot submit after deadline.');
+                window.location.href = '/student';
+                return false;
+            }}
+            
+            const answered = Array.from(textareas).filter(ta => ta.value.trim().length >= 20).length;
+            if (answered < 15) {{
+                e.preventDefault();
+                alert('Please answer at least 15 questions (minimum 20 characters each) before submitting.');
+                return false;
+            }}
+            
+            if (!confirm('⏰ FINAL SUBMISSION: Are you sure you want to submit? You cannot edit after submission and the deadline is enforced!')) {{
+                e.preventDefault();
+                return false;
+            }}
+        }});
+        
+        // Auto-save to localStorage
+        textareas.forEach((textarea, index) => {{
+            const key = `test_{test["id"]}_answer_${{index}}`;
+            textarea.value = localStorage.getItem(key) || '';
+            
+            textarea.addEventListener('input', function() {{
+                localStorage.setItem(key, this.value);
+            }});
+        }});
+        
+        // Initial progress update
+        updateProgress();
+    </script>
+</body>
+</html>'''
+
+if __name__ == '__main__':
+    try:
+        print("🚂 Starting Physical Design Assessment System...")
+        init_data()
+        print("✅ Data initialized successfully")
+        print("✅ 22 Engineers loaded (18 + 3 DFT + 1 Synthesis)")
+        print("✅ 90 Questions loaded (STA, CTS, Signoff, DFT, Synthesis)")
+        print("✅ Auto-scoring system ready")
+        print("✅ 2-day deadline enforcement active")
+        
+        port = int(os.environ.get('PORT', 5000))
+        print(f"✅ Starting server on port {port}")
+        print("🌐 Access the system at: http://localhost:5000")
+        print("👤 Admin: admin / Vibhuaya@3006")
+        print("👥 Engineers: eng001-eng022 / password123")
+        print("🔧 DFT Team: Anbu, Shama, Kiran (eng019-eng021)")
+        print("🔄 Synthesis: Pavan (eng022)")
+        
+        app.run(host='0.0.0.0', port=port, debug=False)
+        
+    except Exception as e:
+        print(f"❌ STARTUP ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        exit(1)# app.py - PART 2 - COPY THIS SECOND AND APPEND TO PART 1
 
 @app.route('/admin')
 def admin():
@@ -1818,5 +1820,4 @@ def admin():
                 <p>• <strong>{len([t for t in all_tests if t['status'] == 'pending'])}</strong> assessments in progress</p>
                 <p>• <strong>{len([t for t in all_tests if t['status'] == 'submitted'])}</strong> submissions awaiting review</p>
                 <p>• <strong>{len([t for t in all_tests if t['status'] == 'completed'])}</strong> assessments completed</p>
-                <p>• <strong>{len([t for t in all_tests if t['status'] == 'overdue'])}</strong> overdue assessments</p>
-                <p>• <strong>⏰ 2-day hard deadline</strong
+                <p>• <strong>{len([t for t in all_tests if t['status'] == 'overdue'])}</strong> overdue assessments
